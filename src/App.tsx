@@ -26,7 +26,7 @@ function App() {
             </div>
           </>
           : <div className="w-full h-full flex flex-col px-4 justify-center items-center">
-            <h2 className="text-2xl mb-4 text-center">Welcome to Eisenhower Matrix app <br />Your first step to become more productive</h2>
+            <h2 className="text-2xl mb-4 text-center -mt-24">Welcome to Eisenhower Matrix app <br />Your first step to become more productive</h2>
               <Button className="mb-8" onClick={login}>Start Here</Button>              
               <img className="xl:w-1/3 md:w-3/5 sm:w-4/5 w-full aspect-auto" src={LoginSvg} />
             </div>
