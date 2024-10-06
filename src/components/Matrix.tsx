@@ -3,21 +3,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { DragDropContext, type DropResult } from 'react-beautiful-dnd';
 
 import supabase from '@/utils/supabase';
-import { useStore, type TODO } from '@/utils/store';
-import Do from '@/components/matrix/Do';
-import Delegate from '@/components/matrix/Delegate';
-import Schedule from '@/components/matrix/Schedule';
-import Delete from '@/components/matrix/Delete';
-
+import { useStore } from '@/utils/store';
+import Component from '@/components/Component';
 
 const Matrix = () => {
-    const todos: Record<string, TODO[]> = useStore(useShallow((state) => ({
-        do: state.do_todos,
-        delegate: state.delegate_todos,
-        schedule: state.schedule_todos,
-        delete: state.delete_todos
-    })))
-    const fetchTodos = useStore(useShallow((state) => state.fetch_todos));
+    const [todos, fetchTodos] = useStore(useShallow((state) => [state.todos, state.fetchTodos]))
 
     const onDragEnd = async (res: DropResult) => {
         if (res.destination) {
@@ -52,12 +42,12 @@ const Matrix = () => {
             }
         }
     }
-    return <div className='grid grid-rows-2 grid-cols-2 aspect-square w-1/3 m-auto inset-0 absolute'>
+    return <div className='bg-slate-400 grid grid-rows-2 grid-cols-2 aspect-square sm:w-3/4 2xl:w-1/2  m-auto inset-0 absolute'>
         <DragDropContext onDragEnd={onDragEnd}>
-            <Do />
-            <Delegate />
-            <Schedule />
-            <Delete />
+            <Component category='do' bg_color='bg-do' overlay_color='bg-doOverlay' />
+            <Component category='delegate' bg_color='bg-delegate' overlay_color='bg-delegateOverlay'/>
+            <Component category='schedule' bg_color='bg-schedule' overlay_color='bg-scheduleOverlay'/>
+            <Component category='delete' bg_color='bg-delete' overlay_color='bg-deleteOverlay'/>
         </DragDropContext>
     </div>
 }

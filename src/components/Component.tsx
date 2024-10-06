@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
-import { useStore, type TODO } from '@/utils/store';
-import { useShallow } from 'zustand/react/shallow';
-import { Droppable, Draggable } from 'react-beautiful-dnd';
+import { useStore } from '@/utils/store';
 import supabase from '@/utils/supabase';
+import { LexoRank } from 'lexorank';
+import { useEffect, useState } from 'react'
+import { useShallow } from 'zustand/shallow';
 import {
     Dialog,
     DialogContent,
@@ -15,34 +15,23 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from "@/components/ui/button"
 import { FaCheck, FaPlus } from 'react-icons/fa6';
-import { LexoRank } from 'lexorank';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
 
-const getTodos = async () => {
-    const { data, error } = await supabase
-        .from("todos")
-        .select("*")
-        .eq("category", "delegate")
-        .order("order_id");
-    if (!error) {
-        return data as TODO[];
-    }
-    return [];
+interface ComponentProps {
+    category: string,
+    bg_color: string,
+    overlay_color: string
 }
 
-const Delegate = () => {
+const Component = (props: ComponentProps) => {
     const [open, setOpen] = useState(false);
     const [todo, setTodo] = useState<string>();
-
-    const [session, todos, setTodos] = useStore(useShallow((state) => [state.session, state.delegate_todos, state.set_delegate_todos]));
-
+    const [session, date, todos, fetchTodos] = useStore(useShallow((state) => [state.session, state.date, state.todos[props.category], state.fetchTodos]))
+    
     useEffect(() => {
-        async function _getTodos() {
-            const _todos = await getTodos();
-            setTodos(_todos);
-        }
-        _getTodos();
-    }, [])
-
+        fetchTodos(props.category);
+    }, [date])
+    
     const addTodo = async () => {
         if (session && todo && todo.length > 0) {
             let order_id = LexoRank.middle();
@@ -53,20 +42,20 @@ const Delegate = () => {
             await supabase.from("todos").insert({
                 todo,
                 user_id: session?.user.id,
-                category: "delegate",
-                order_id: order_id.toString()
+                category: "do",
+                order_id: order_id.toString(),
+                created_at: date
             });
             setTodo("");
-            const _todos = await getTodos();
-            setTodos(_todos);
+            await fetchTodos(props.category);
             setOpen(false);
         }
     }
 
     return (
-        <div className='bg-delegate'>
-            <div className='flex px-2 justify-between bg-delegateOverlay m-2 rounded'>
-                <h2 className='text-xl'>Delegate</h2>
+        <div className={props.bg_color}>
+            <div className={'flex px-2 justify-between m-2 rounded ' + props.overlay_color}>
+                <h2 className='text-xl'>{props.category.toUpperCase()}</h2>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <button>
@@ -75,13 +64,13 @@ const Delegate = () => {
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Delegate Tasks</DialogTitle>
-                            <DialogDescription>Add the tasks which you need to delegate</DialogDescription>
+                            <DialogTitle>{props.category.toUpperCase()}</DialogTitle>
+                            <DialogDescription>Add the tasks which you need to complete</DialogDescription>
                         </DialogHeader>
                         <div className="flex items-center space-x-2">
                             <div className="grid flex-1 gap-2">
                                 <Label htmlFor="todo" className="sr-only">
-                                   Title 
+                                    Link
                                 </Label>
                                 <Input
                                     id="todo"
@@ -94,14 +83,14 @@ const Delegate = () => {
                     </DialogContent>
                 </Dialog>
             </div>
-            <Droppable droppableId='delegate'>
+            <Droppable droppableId={props.category}>
                 {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className='m-2'>
-                        {todos.map((todo, idx) => (
+                        {todos && todos.map((todo, idx) => (
                             <Draggable key={todo.id} draggableId={todo.id.toString()} index={idx}>
                                 {(provided) => {
                                     return (
-                                        <div className='mb-2 bg-delegateOverlay rounded p-1' {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
+                                        <div className={'mb-2 p-1 rounded ' + props.overlay_color} {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
                                             {todo.todo}
                                         </div>
                                     )
@@ -117,4 +106,4 @@ const Delegate = () => {
     )
 }
 
-export default Delegate
+export default Component

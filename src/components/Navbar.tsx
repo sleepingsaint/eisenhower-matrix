@@ -5,7 +5,7 @@ import supabase from '@/utils/supabase'
 import { Button } from "@/components/ui/button"
 
 const Navbar = () => {
-    const [session, setSession] = useStore(useShallow((state) => [state.session, state.setSession]));
+    const [session, setSession, clean_todos] = useStore(useShallow((state) => [state.session, state.setSession, state.clean_todos]));
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -39,10 +39,11 @@ const Navbar = () => {
     const signOut = async () => {
         await supabase.auth.signOut();
         setSession(undefined);
+        clean_todos();
     }
 
     return (
-        <div className='flex justify-between p-4 shadow-xl'>
+        <div className='h-min flex justify-between p-2 px-4 shadow-xl'>
             <h1 className='text-xl'>Eisenhower Matrix</h1>
             <div className='pr-4 group relative'>
                 {session ? <div>

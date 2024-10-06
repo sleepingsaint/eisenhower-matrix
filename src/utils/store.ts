@@ -11,49 +11,54 @@ export type TODO = {
     category: string;
 }
 
+
 interface Store {
     session?: SupabaseSession
+    date: string,
+    todos: Record<string, TODO[]>
     setSession: (session?: SupabaseSession) => void
-    do_todos: TODO[]
-    delegate_todos: TODO[]
-    schedule_todos: TODO[]
-    delete_todos: TODO[]
-    set_do_todos: (todos: TODO[]) => void
-    set_delegate_todos: (todos: TODO[]) => void
-    set_schedule_todos: (todos: TODO[]) => void
-    set_delete_todos: (todos: TODO[]) => void
-    fetch_todos: (category: string) => void
+    setTodos: (category: string, todos: TODO[]) => void
+    fetchTodos: (category: string) => void
+    clean_todos: () => void
+    setDate: (date: Date) => void
 }
 
-export const useStore = create<Store>((set) => ({
-    do_todos: [],
-    delegate_todos: [],
-    schedule_todos: [],
-    delete_todos: [],
+const getSupabaseDateString = (date: Date) => {
+    let full_date = date.getDate().toString();
+    full_date = full_date.length == 1 ? '0' + full_date : full_date;
+
+    let full_month = (date.getMonth() + 1).toString();
+    full_month = full_month.length == 1 ? '0' + full_month : full_month;
+
+    const _date = date.getFullYear() + "-" + full_month + "-" + full_date;
+    return _date;
+}
+
+export const useStore = create<Store>((set, get) => ({
+    todos: {},
+    date: getSupabaseDateString(new Date()),
+    setTodos: (category: string, todos: TODO[]) => set((state) => {
+        const _todos = { ...state.todos };
+        _todos[category] = todos;
+        return { todos: _todos };
+    }),
     setSession: (session) => set((_) => ({ session })),
-    set_do_todos: (todos: TODO[]) => set((_) => ({do_todos: todos})),
-    set_delegate_todos: (todos: TODO[]) => set((_) => ({delegate_todos: todos})),
-    set_schedule_todos: (todos: TODO[]) => set((_) => ({schedule_todos: todos})),
-    set_delete_todos: (todos: TODO[]) => set((_) => ({delete_todos: todos})),
-    fetch_todos: async (category: string) => {
-        const {data, error} = await supabase.from("todos").select("*").eq("category", category).order("order_id");
-        if(!error){
-            switch (category) {
-                case "do":
-                    set((_) => ({do_todos: data}))
-                    break;
-                case "delegate":
-                    set((_) => ({delegate_todos: data}))
-                    break;
-                case "schedule":
-                    set((_) => ({schedule_todos: data}))
-                    break;
-                case "delete":
-                    set((_) => ({delete_todos: data}))
-                    break;
-                default:
-                    break;
-            }
+    fetchTodos: async (category: string) => {
+        const date = get().date;
+        const { data, error } = await supabase
+            .from("todos")
+            .select("*")
+            .eq("category", category)
+            .eq("created_at", date)
+            .order("order_id");
+        if (!error) {
+            set((state) => {
+                const _todos = { ...state.todos };
+                _todos[category] = data;
+                return { todos: _todos };
+            })
         }
-    }
+    },
+    clean_todos: () => set((_) => ({ todos: {} })),
+    setDate: (date: Date) => set((_) => ({ date: getSupabaseDateString(date) }))
 }))
